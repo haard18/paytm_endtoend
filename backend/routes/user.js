@@ -1,11 +1,13 @@
 const express = require('express');
+require('dotenv').config();
 const UserRouter = require('./user');
 const router = express.Router();
-const User = require('../db');
+const { User } = require('../db');
+const { Account } = require('../db');
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET } = require('../config');
-const zod = require('zod');
 const { authMiddleware } = require('../middleware');
+const zod = require('zod');
+const JWT_SECRET = process.env.JWT_SECRET;
 const signUpBody = zod.object({
     userName: zod.string().min(6).max(30),
     password: zod.string().min(6),
@@ -16,12 +18,17 @@ router.post('/signup', async (req, res) => {
     const success = signUpBody.safeParse(req.body);
     if (!success) {
         res.status(411).json({ error: "Invalid Inputs" });
+        return;
     }
-    const existingUser = User.findOne({ username: req.body.userName });
+    const existingUser = await User.findOne({ userName: req.body.userName });
     if (existingUser) {
-        res.status(409).json({ error: "User already exists" });
+        res.status(411).json({ error: "User already exists" });
+        return;
     }
+    console.log("before error");
     const dbUser = await User.create(req.body);
+    const user = dbUser._id;
+    await Account.create({ userid: user, balance: 1 + Math.random() * 10000 });
     const token = jwt.sign({ id: dbUser._id }, JWT_SECRET);
     res.json({ message: "User Created", token: token });
 })
@@ -34,13 +41,20 @@ router.post('/signin', async (req, res) => {
     if (!success) {
         res.status(411).json({ error: "Invalid Inputs" });
     }
-    const user = await User.findOne({ username: req.body.username });
-    if (user) {
-        const token = jwt.sign({ id: user._id }, JWT_SECRET);
-
-        res.json({ message: "User Signed In", token: token });
+    try {
+        console.log(req.body)
+        const user = await User.findOne({ userName: req.body.username });
+        console.log(user);
+        if (user && user.password === req.body.password) {
+            const token = jwt.sign({ id: user._id }, JWT_SECRET);
+            return res.json({ message: "User Signed In", token: token });
+        }
+        
+        return res.status(404).json({ error: "User not found" });
+    } catch (error) {
+        console.error("Error in signin:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
     }
-    res.status(411).json({ error: "Error while Logging in" });
 })
 const updateBody = zod.object({
     username: zod.string().optional(),
@@ -76,7 +90,7 @@ router.get('/bulk', async (req, res) => {
     })
     res.json({
         user: users.map(user => ({
-            username: user.username,
+            username: user.userName,
             firstName: user.firstName,
             lastName: user.lastName,
             _id: user._id

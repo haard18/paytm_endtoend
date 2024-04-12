@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const { ParseStatus } = require('zod');
-const Schema = mongoose;
+const { Schema } = mongoose;
 require('dotenv').config();
 
 const mongoUrl = process.env.MONGODB_URL;
@@ -43,7 +43,7 @@ const AccountSchema = new Schema({
 
     },
     balance: {
-        type: float,
+        type: Number,
         required: true
     },
 });
