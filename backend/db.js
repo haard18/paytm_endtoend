@@ -1,21 +1,18 @@
+// backend/db.js
 const mongoose = require('mongoose');
-const { ParseStatus } = require('zod');
-const { Schema } = mongoose;
-require('dotenv').config();
 
-const mongoUrl = process.env.MONGODB_URL;
+mongoose.connect("mongodb://localhost:27017/paytm")
 
-mongoose.connect(mongoUrl);
-
-const UserSchema = new Schema({
-    userName: {
+// Create a Schema for Users
+const userSchema = new mongoose.Schema({
+    username: {
         type: String,
         required: true,
         unique: true,
         trim: true,
         lowercase: true,
-        maxLength: 30,
-        minLength: 6
+        minLength: 3,
+        maxLength: 30
     },
     password: {
         type: String,
@@ -34,20 +31,24 @@ const UserSchema = new Schema({
         trim: true,
         maxLength: 50
     }
-})
-const AccountSchema = new Schema({
-    userid: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        requred: true
+});
 
+const accountSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId, // Reference to User model
+        ref: 'User',
+        required: true
     },
     balance: {
         type: Number,
         required: true
-    },
+    }
 });
-const Account = mongoose.model('Account', AccountSchema);
-const User = mongoose.model('User', UserSchema);
-module.exports = { User, Account };
-//module.exports = mongoose.model('User', UserSchema);
+
+const Account = mongoose.model('Account', accountSchema);
+const User = mongoose.model('User', userSchema);
+
+module.exports = {
+	User,
+    Account
+};

@@ -1,6 +1,4 @@
-// require('dotenv').config();
-
-// const jwt_secret=process.env.JWT_SECRET;
-module.exports={
-    jwt_secret:"HelloHaardy@123"
+//backend/config.js
+module.exports = {
+	JWT_SECRET: "Haard@1808"
 }
